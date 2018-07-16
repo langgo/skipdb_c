@@ -122,7 +122,6 @@ void benchmark(skipdb_t *db, const int count) {
         gettimeofday(&t1, NULL);
 
         for (int i = 0; i < count; ++i) {
-            printf("key: %s, value: %d\n", data[i], i + 1);
             fflush(stdout);
             if (skipdb_put(db, data[i], key_size, i + 1) == -1) {
                 perror("skipdb_put");

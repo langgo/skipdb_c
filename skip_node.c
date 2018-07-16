@@ -7,7 +7,7 @@ inline uint64_t *skip_node_forwards(skip_node_t *node) {
 }
 
 inline char *skip_node_key(skip_node_t *node) {
-    return (char *) (node->ptr + (node->level << 3));
+    return (char *) (node->ptr + (node->level << SKIP_NODE_FORWARD_SIZE));
 }
 
 void skip_node_init(skip_node_t *node, uint16_t level, const char *key, uint32_t key_len, uint64_t value) {
@@ -26,5 +26,5 @@ void skip_node_init(skip_node_t *node, uint16_t level, const char *key, uint32_t
 }
 
 inline size_t skip_node_size(skip_node_t *node) {
-    return SKIP_NODE_HEADER_SIZE + node->level << SKIP_NODE_FORWARD_SIZE + node->key_len;
+    return SKIP_NODE_HEADER_SIZE + (node->level << SKIP_NODE_FORWARD_SIZE) + node->key_len;
 }

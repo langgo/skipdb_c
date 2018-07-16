@@ -311,7 +311,7 @@ uint16_t skipdb_random_level(skipdb_t *db) {
 
 skip_node_t *
 skipdb_create_node(skipdb_t *db, uint16_t level, const char *key, uint32_t key_len, uint64_t value) {
-    uint32_t size = SKIP_NODE_HEADER_SIZE + level << SKIP_NODE_FORWARD_SIZE + key_len; // TODO int ?
+    uint32_t size = SKIP_NODE_HEADER_SIZE + (level << SKIP_NODE_FORWARD_SIZE) + key_len; // TODO int ?
     uint64_t off = skipdb_allocate(db, size); // allow 0
     skip_node_t *node = skipdb_node(db, off); // if off == 0 return NULL
     if (node == NULL) {
