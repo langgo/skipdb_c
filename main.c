@@ -165,6 +165,12 @@ int main(int argc, const char *argv[]) {
 
     int count = atoi(argv[1]);
 
+    {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        srandom(t1.tv_usec);
+    }
+
     { // 功能
         skipdb_t *db = skipdb_open("test.db");
         if (db == NULL) {

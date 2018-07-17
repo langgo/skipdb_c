@@ -136,6 +136,9 @@ int skipdb_mmap(skipdb_t *db, size_t size) {
     if ((db->mmap_addr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, db->fd, 0)) == MAP_FAILED) {
         return -1;
     }
+    if (madvise(db->mmap_addr, db->mmap_size, MADV_RANDOM) == -1) {
+        return -1;
+    }
 
     db->list = (skip_list_t *) (db->mmap_addr);
     db->header = skipdb_node(db, SKIPDB_HEADER_NODE_OFFSET);
