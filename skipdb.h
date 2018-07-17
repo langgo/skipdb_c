@@ -11,7 +11,8 @@
 #define SKIPDB_MIN_FILE_SIZE (4096)
 #define SKIPDB_MAX_KEY_LEN (0xFFFF)
 #define SKIPDB_MAX_LEVEL_LIMIT (64)
-#define SKIPDB_HEADER_NODE_OFFSET (1024)
+#define SKIPDB_HEADER_SIZE (1024)
+#define SKIPDB_HEADER_NODE_OFFSET (1024 + ((SKIPDB_MAX_LEVEL_LIMIT -1) << SKIP_NODE_FORWARD_SIZE))
 
 // maxMapSize represents the largest mmap size supported by SkipDB.
 #define SKIPDB_MAX_SIZE (0xFFFFFFFFFFFF) // 256TB // TODO 和硬件平台有关系

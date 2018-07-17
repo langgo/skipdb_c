@@ -8,16 +8,13 @@
 #define SKIP_NODE_FLAG_DEL (1)
 
 typedef struct skip_node_t {
+    uint64_t forwards[1];
     uint16_t flag;
     uint16_t level;
     uint32_t key_len;
     uint64_t value; // TODO 不同平台怎么处理 64 32
-    char ptr[0];
+    char key[0];
 } skip_node_t;
-
-uint64_t *skip_node_forwards(skip_node_t *node);
-
-char *skip_node_key(skip_node_t *node);
 
 void skip_node_init(skip_node_t *node, uint16_t level, const char *key, uint32_t key_len, uint64_t value);
 

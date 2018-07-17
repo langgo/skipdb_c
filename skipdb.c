@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <assert.h>
 #include "skipdb.h"
 
 /********** private header start **********/
@@ -99,18 +100,15 @@ int skipdb_init(skipdb_t *db) {
         return -1;
     }
 
+    skip_node_init(db->header, SKIPDB_MAX_LEVEL_LIMIT, "", 0, 0);
+
     db->list->magic = SKIPDB_MAGIC;
     db->list->version = SKIPDB_VERSION;
     db->list->max_level = 32; // TODO 当前设置为 32
     db->list->cur_level = 1;
     db->list->p = 0.25;
-    db->list->last_offset = SKIPDB_HEADER_NODE_OFFSET;
+    db->list->last_offset = SKIPDB_HEADER_SIZE + skip_node_size(db->header);
     db->list->count = 0;
-
-    db->header = skipdb_create_node(db, SKIPDB_MAX_LEVEL_LIMIT, "", 2, 0);
-    if (db->header == NULL) { // TODO 创建的时候，其实不会出现错误。那么这里的错误应该怎么处理（与golang比较一下）
-        return -1;
-    }
 
     return 0;
 }
@@ -182,8 +180,9 @@ inline skip_node_t *skipdb_node(skipdb_t *db, uint64_t offset) {
 }
 
 inline uint64_t skipdb_offset(skipdb_t *db, skip_node_t *node) {
-    // TODO assert > 0
-    return (char *) node - db->mmap_addr;
+    uint64_t ret = (char *) node - db->mmap_addr;
+    assert(ret > 0);
+    return ret;
 }
 
 skip_node_t *skipdb_find(skipdb_t *db, const char *key, uint32_t key_len) {
@@ -200,12 +199,12 @@ skip_node_t *skipdb_find(skipdb_t *db, const char *key, uint32_t key_len) {
     cur = db->header;
     for (int i = db->list->cur_level - 1; i >= 0; --i) {
         for (;;) {
-            next = skipdb_node(db, skip_node_forwards(cur)[i]);
+            next = skipdb_node(db, cur->forwards[-i]);
             if (next == NULL) {
                 break;
             }
 
-            int diff = db->compare(skip_node_key(next), key, next->key_len, key_len);
+            int diff = db->compare(next->key, key, next->key_len, key_len);
             if (diff < 0) {
                 cur = next;
                 continue;
@@ -258,12 +257,12 @@ int skipdb_put(skipdb_t *db, const char *key, uint32_t key_len, uint64_t value) 
         cur = db->header;
         for (int i = db->list->cur_level - 1; i >= 0; --i) {
             for (;;) {
-                next = skipdb_node(db, skip_node_forwards(cur)[i]);
+                next = skipdb_node(db, cur->forwards[-i]);
                 if (next == NULL) {
                     break;
                 }
 
-                int diff = db->compare(skip_node_key(next), key, next->key_len, key_len);
+                int diff = db->compare(next->key, key, next->key_len, key_len);
                 if (diff < 0) {
                     cur = next;
                     continue;
@@ -293,10 +292,12 @@ int skipdb_put(skipdb_t *db, const char *key, uint32_t key_len, uint64_t value) 
     }
 
     uint64_t offset = skipdb_offset(db, node);
+    skip_node_t *update_node = NULL;
     for (int i = 0; i < level; ++i) {
-        uint64_t *update_forwards = skip_node_forwards(skipdb_node(db, updates[i]));
-        skip_node_forwards(node)[i] = update_forwards[i];
-        update_forwards[i] = offset;
+        update_node = skipdb_node(db, updates[i]);
+
+        node->forwards[-i] = update_node->forwards[-i];
+        update_node->forwards[-i] = offset;
     }
 
     return 0;
@@ -315,13 +316,14 @@ uint16_t skipdb_random_level(skipdb_t *db) {
 skip_node_t *
 skipdb_create_node(skipdb_t *db, uint16_t level, const char *key, uint32_t key_len, uint64_t value) {
     uint32_t size = SKIP_NODE_HEADER_SIZE + (level << SKIP_NODE_FORWARD_SIZE) + key_len; // TODO int ?
-    uint64_t off = skipdb_allocate(db, size); // allow 0
-    skip_node_t *node = skipdb_node(db, off); // if off == 0 return NULL
-    if (node == NULL) {
+    uint64_t off = skipdb_allocate(db, size);
+    if (off == 0) {
         return NULL;
     }
+    skip_node_t *node = skipdb_node(db, off + ((level - 1) << SKIP_NODE_FORWARD_SIZE));
+    assert(node != NULL);
 
-    skip_node_init(node, level, key, key_len, value); // TODO 不太清楚什么时候检测是否为 NULL
+    skip_node_init(node, level, key, key_len, value); // TODO 不太清楚什么时候检测是否为 NULL，里面还是外面
 
     return node;
 }
@@ -346,7 +348,7 @@ void skipdb_dump_node(skipdb_t *db, skip_node_t *node) {
     // TODO printf 与 forwards %v
     printf(
             "skip_node_t(0x%04lx)(%ld){flag: %d, level: %2d, key_len: %4d, value: %8ld, ",
-            ((char *) node - db->mmap_addr),
+            skipdb_offset(db, node),
             skip_node_size(node),
             node->flag,
             node->level,
@@ -354,18 +356,14 @@ void skipdb_dump_node(skipdb_t *db, skip_node_t *node) {
             node->value
     );
 
-    uint64_t *forwards = skip_node_forwards(node);
-
     printf("forwards: [");
     for (int i = 0; i < node->level; ++i) {
-        printf("0x%lx, ", forwards[i]);
+        printf("0x%lx, ", node->forwards[-i]);
     }
     printf("], ");
 
-    char *key = skip_node_key(node);
-
     printf("key: ");
-    fwrite(key, node->key_len, 1, stdout);
+    fwrite(node->key, node->key_len, 1, stdout);
     printf(" }\n");
 }
 
@@ -406,7 +404,7 @@ void skipdb_dump(skipdb_t *db, bool dump_node) {
         skip_node_t *cur = db->header;
         while (cur != NULL) {
             skipdb_dump_node(db, cur);
-            cur = skipdb_node(db, skip_node_forwards(cur)[0]);
+            cur = skipdb_node(db, cur->forwards[0]);
         }
     }
     printf("========= dump db over =========\n");

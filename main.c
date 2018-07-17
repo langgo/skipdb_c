@@ -6,8 +6,11 @@
 #include <stdbool.h>
 #include "skipdb.h"
 
-void test() {
-
+void test(skipdb_t *db) {
+    if (skipdb_put(db, "aaaa", 4, 100) == -1) {
+        perror("skipdb_put");
+        exit(-1);
+    }
 }
 
 // 功能测试
@@ -27,7 +30,7 @@ void test_put_get(skipdb_t *db) {
         uint64_t value = skipdb_get(db, key, key_len);
         if (value != i + 1) {
             perror("skipdb_get");
-            printf("获取的值不一致 1");
+            printf("获取的值不一致 1\n");
             printf("i: %d, key: %s, value: %ld\n", i, key, value);
             exit(-1);
         }
@@ -39,7 +42,7 @@ void test_put_get(skipdb_t *db) {
         uint64_t value = skipdb_get(db, key, key_len);
         if (value != i + 1) {
             perror("skipdb_get");
-            printf("获取的值不一致 2");
+            printf("获取的值不一致 2\n");
             printf("i: %d, key: %s, value: %ld\n", i, key, value);
             exit(-1);
         }
@@ -177,6 +180,10 @@ int main(int argc, const char *argv[]) {
             perror("skipdb_open");
             exit(-1);
         }
+
+        // printf("test:\n");
+        // test(db);
+        // skipdb_dump(db, true);
 
         printf("test_put_get:\n");
         fflush(stdout);
