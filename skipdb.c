@@ -33,7 +33,7 @@ skip_node_t *skipdb_find(skipdb_t *db, const char *key, uint32_t key_len);
 
 /********** private header end **********/
 
-inline int compare(const void *s1, const void *s2, size_t n1, size_t n2) {
+int compare(const void *s1, const void *s2, size_t n1, size_t n2) {
     size_t min = n1 < n2 ? n1 : n2;
     int diff = memcmp(s1, s2, min);
     return diff != 0 ? diff : (int) (n1 - n2);
