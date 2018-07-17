@@ -33,7 +33,7 @@ skip_node_t *skipdb_find(skipdb_t *db, const char *key, uint32_t key_len);
 
 /********** private header end **********/
 
-int compare(const void *s1, const void *s2, size_t n1, size_t n2) {
+inline int compare(const void *s1, const void *s2, size_t n1, size_t n2) {
     size_t min = n1 < n2 ? n1 : n2;
     int diff = memcmp(s1, s2, min);
     return diff != 0 ? diff : (int) (n1 - n2);
@@ -103,7 +103,7 @@ int skipdb_init(skipdb_t *db) {
     db->list->version = SKIPDB_VERSION;
     db->list->max_level = 32; // TODO 当前设置为 32
     db->list->cur_level = 1;
-    db->list->p = 0.5;
+    db->list->p = 0.25;
     db->list->last_offset = SKIPDB_HEADER_NODE_OFFSET;
     db->list->count = 0;
 
@@ -173,7 +173,7 @@ size_t adjust_mmap_size(size_t size) {
     return sz;
 }
 
-skip_node_t *skipdb_node(skipdb_t *db, uint64_t offset) {
+inline skip_node_t *skipdb_node(skipdb_t *db, uint64_t offset) {
     if (offset <= 0) {
         return NULL;
     }
@@ -181,7 +181,7 @@ skip_node_t *skipdb_node(skipdb_t *db, uint64_t offset) {
     return (skip_node_t *) (db->mmap_addr + offset);
 }
 
-uint64_t skipdb_offset(skipdb_t *db, skip_node_t *node) {
+inline uint64_t skipdb_offset(skipdb_t *db, skip_node_t *node) {
     // TODO assert > 0
     return (char *) node - db->mmap_addr;
 }
