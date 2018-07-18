@@ -21,6 +21,9 @@
 #define SKIPDB_MAGIC (0x0706050403020100)
 #define SKIPDB_VERSION (0)
 
+#define SKIPDB_OFFSET(db, node) ((char *) (node) - (db)->mmap_addr)
+#define SKIPDB_NODE(db, offset) ((offset) <= 0 ? NULL : (skip_node_t *) ((db)->mmap_addr + (offset)))
+
 typedef struct skip_list_t {
     uint64_t magic;
     uint64_t version;

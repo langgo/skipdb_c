@@ -8,6 +8,8 @@
 #define SKIP_NODE_FORWARD_SIZE (3) // 2 ^ SKIP_NODE_FORWARD_SIZE = sizeof(uint64_t)
 #define SKIP_NODE_FLAG_DEL (1)
 
+#define SKIP_NODE_SIZE(node) (SKIP_NODE_HEADER_SIZE + ((node)->level << SKIP_NODE_FORWARD_SIZE) + (node)->key_len)
+
 typedef struct skip_node_t {
     uint64_t forwards[1]; // NOTE: -O3优化的情况下，如果用数组的方式取值，会检测数组范围，导致段错误。采用指针取值。
     uint16_t flag;
