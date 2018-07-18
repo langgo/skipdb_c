@@ -105,7 +105,7 @@ int skipdb_init(skipdb_t *db) {
     db->list->magic = SKIPDB_MAGIC;
     db->list->version = SKIPDB_VERSION;
     db->list->max_level = 32; // TODO 当前设置为 32
-    db->list->cur_level = 1;
+    db->list->cur_level = 0;
     db->list->p = 0.25;
     db->list->last_offset = SKIPDB_HEADER_SIZE + skip_node_size(db->header);
     db->list->count = 0;
@@ -199,7 +199,7 @@ skip_node_t *skipdb_find(skipdb_t *db, const char *key, uint32_t key_len) {
     cur = db->header;
     for (int i = db->list->cur_level - 1; i >= 0; --i) {
         for (;;) {
-            next = skipdb_node(db, cur->forwards[-i]);
+            next = skipdb_node(db, *(cur->forwards - i));
             if (next == NULL) {
                 break;
             }
@@ -257,7 +257,7 @@ int skipdb_put(skipdb_t *db, const char *key, uint32_t key_len, uint64_t value) 
         cur = db->header;
         for (int i = db->list->cur_level - 1; i >= 0; --i) {
             for (;;) {
-                next = skipdb_node(db, cur->forwards[-i]);
+                next = skipdb_node(db, *(cur->forwards - i));
                 if (next == NULL) {
                     break;
                 }
@@ -296,8 +296,8 @@ int skipdb_put(skipdb_t *db, const char *key, uint32_t key_len, uint64_t value) 
     for (int i = 0; i < level; ++i) {
         update_node = skipdb_node(db, updates[i]);
 
-        node->forwards[-i] = update_node->forwards[-i];
-        update_node->forwards[-i] = offset;
+        *(node->forwards - i) = *(update_node->forwards - i);
+        *(update_node->forwards - i) = offset;
     }
 
     return 0;
@@ -358,7 +358,7 @@ void skipdb_dump_node(skipdb_t *db, skip_node_t *node) {
 
     printf("forwards: [");
     for (int i = 0; i < node->level; ++i) {
-        printf("0x%lx, ", node->forwards[-i]);
+        printf("0x%lx, ", *(node->forwards - i));
     }
     printf("], ");
 

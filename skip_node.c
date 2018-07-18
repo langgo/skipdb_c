@@ -4,7 +4,7 @@
 
 void skip_node_init(skip_node_t *node, uint16_t level, const char *key, uint32_t key_len, uint64_t value) {
     for (int i = 0; i < level; ++i) {
-        node->forwards[-i] = 0;
+        *(node->forwards - i) = 0;
     }
 
     node->flag = 0;
