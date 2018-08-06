@@ -10,4 +10,4 @@ add_executable(skipdb
         skip_node.c
         skip_node.h
         skipdb.c
-        skipdb.h)
+        skipdb.h status.c status.h)

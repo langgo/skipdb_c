@@ -235,6 +235,10 @@ uint64_t skipdb_del(skipdb_t *db, const char *key, uint32_t key_len) {
     return node->value;
 }
 
+// memtable -> immemtable triggering condition:
+// - file size 1MB
+// - key count
+// - del count
 int skipdb_put(skipdb_t *db, const char *key, uint32_t key_len, uint64_t value) {
     if (key == NULL) {
         return -1;

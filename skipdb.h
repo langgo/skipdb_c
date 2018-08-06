@@ -24,7 +24,7 @@
 #define SKIPDB_OFFSET(db, node) ((char *) (node) - (db)->mmap_addr)
 #define SKIPDB_NODE(db, offset) ((offset) <= 0 ? NULL : (skip_node_t *) ((db)->mmap_addr + (offset)))
 
-typedef struct skip_list_t {
+typedef struct {
     uint64_t magic;
     uint64_t version;
     uint16_t max_level;
@@ -34,7 +34,7 @@ typedef struct skip_list_t {
     uint64_t count;
 } skip_list_t;
 
-typedef struct skipdb_t {
+typedef struct {
     skip_list_t *list;
     skip_node_t *header;
     char *mmap_addr;
